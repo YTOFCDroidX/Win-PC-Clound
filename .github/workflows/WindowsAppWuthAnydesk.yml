@@ -1,4 +1,4 @@
-name: Windows Cloud PC - Full Desktop Experience
+name: Windows Cloud PC - Aesthetic Edition
 
 on:
   workflow_dispatch:
@@ -11,174 +11,195 @@ jobs:
     steps:
       - name: Enable RDP Access
         run: |
-          Write-Host "🔧 Habilitando RDP..." -ForegroundColor Cyan
+          Write-Host "Habilitando RDP..." -ForegroundColor Cyan
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 0
-          Write-Host "✅ RDP habilitado" -ForegroundColor Green
+          Write-Host "RDP habilitado com sucesso" -ForegroundColor Green
 
       - name: Create User Account
         run: |
-          Write-Host "👤 Criando usuário..." -ForegroundColor Cyan
+          Write-Host "Criando usuario..." -ForegroundColor Cyan
           $username = "github"
           $password = "Github@2024"
           net user $username $password /add
           net localgroup administrators $username /add
-          Write-Host "✅ Usuário criado: $username" -ForegroundColor Green
+          Write-Host "Usuario criado: $username" -ForegroundColor Green
           echo "RDP_USER=$username" >> $env:GITHUB_ENV
           echo "RDP_PASS=$password" >> $env:GITHUB_ENV
 
-      - name: Install ngrok for RDP Tunnel
+      - name: Install ngrok
         run: |
-          Write-Host "📡 Instalando ngrok..." -ForegroundColor Cyan
+          Write-Host "Instalando ngrok..." -ForegroundColor Cyan
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "ngrok.zip"
           Expand-Archive -Path "ngrok.zip" -DestinationPath "C:\ngrok"
-          Write-Host "✅ ngrok instalado" -ForegroundColor Green
+          Write-Host "ngrok instalado" -ForegroundColor Green
 
-      - name: Start ngrok RDP Tunnel
+      - name: Start ngrok Tunnel
         run: |
-          Write-Host "🌐 Iniciando túnel RDP..." -ForegroundColor Cyan
+          Write-Host "Iniciando tunel RDP..." -ForegroundColor Cyan
           Start-Process -FilePath "C:\ngrok\ngrok.exe" -ArgumentList "tcp 3389 --region us" -WindowStyle Hidden
           Start-Sleep -Seconds 10
           try {
             $response = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
             $rdpUrl = $response.tunnels[0].public_url -replace "tcp://", ""
             echo "RDP_URL=$rdpUrl" >> $env:GITHUB_ENV
-            Write-Host "✅ Túnel RDP criado: $rdpUrl" -ForegroundColor Green
+            Write-Host "Tunel criado: $rdpUrl" -ForegroundColor Green
           } catch {
-            Write-Host "⚠️ Erro ao obter URL do ngrok" -ForegroundColor Yellow
+            Write-Host "Erro ao obter URL do ngrok" -ForegroundColor Yellow
+            echo "RDP_URL=Nao_disponivel" >> $env:GITHUB_ENV
           }
 
-      - name: Download Aesthetic Wallpapers
+      - name: Download Wallpaper
         run: |
-          Write-Host "🎨 Baixando wallpapers aesthetic..." -ForegroundColor Cyan
+          Write-Host "Baixando wallpaper aesthetic..." -ForegroundColor Cyan
           New-Item -ItemType Directory -Path "C:\Wallpapers" -Force | Out-Null
-          $wallpapers = @(
-            "https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&h=1080&fit=crop",
-            "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1920&h=1080&fit=crop",
-            "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&h=1080&fit=crop"
-          )
-          $mainWallpaper = "C:\Wallpapers\aesthetic.jpg"
-          Invoke-WebRequest -Uri $wallpapers[0] -OutFile $mainWallpaper
-          Write-Host "✅ Wallpaper baixado" -ForegroundColor Green
+          $wallpaperUrl = "https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&h=1080&fit=crop&q=80"
+          Invoke-WebRequest -Uri $wallpaperUrl -OutFile "C:\Wallpapers\aesthetic.jpg"
+          Write-Host "Wallpaper baixado" -ForegroundColor Green
 
-      - name: Set Aesthetic Wallpaper
+      - name: Apply Wallpaper
+        shell: powershell
         run: |
-          Write-Host "🖼️ Aplicando wallpaper..." -ForegroundColor Cyan
+          Write-Host "Aplicando wallpaper..." -ForegroundColor Cyan
+          
           $wallpaperPath = "C:\Wallpapers\aesthetic.jpg"
+          
+          # Configura registro
           Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name Wallpaper -Value $wallpaperPath
           Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name WallpaperStyle -Value 10
           Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name TileWallpaper -Value 0
-          $code = @"
-          using System;
-          using System.Runtime.InteropServices;
-          public class Wallpaper {
-            [DllImport("user32.dll", CharSet=CharSet.Auto)]
-            public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-          }
-"@
-          Add-Type -TypeDefinition $code
-          [Wallpaper]::SystemParametersInfo(0x0014, 0, $wallpaperPath, 0x0001 -bor 0x0002)
-          Write-Host "✅ Wallpaper aplicado" -ForegroundColor Green
+          
+          # Atualiza wallpaper usando rundll32
+          rundll32.exe user32.dll, UpdatePerUserSystemParameters, 1, True
+          
+          Write-Host "Wallpaper aplicado" -ForegroundColor Green
 
-      - name: Customize Desktop Theme
+      - name: Customize Theme
         run: |
-          Write-Host "🎨 Personalizando tema..." -ForegroundColor Cyan
+          Write-Host "Personalizando tema..." -ForegroundColor Cyan
           Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "AppsUseLightTheme" -Value 0
           Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name "SystemUsesLightTheme" -Value 0
           Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\DWM" -Name "AccentColor" -Value 0xff9b59d0
           Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\DWM" -Name "ColorizationColor" -Value 0xff9b59d0
-          Write-Host "✅ Tema personalizado" -ForegroundColor Green
+          Write-Host "Tema personalizado" -ForegroundColor Green
 
       - name: Install AnyDesk
         run: |
-          Write-Host "📥 Instalando AnyDesk..." -ForegroundColor Cyan
+          Write-Host "Instalando AnyDesk..." -ForegroundColor Cyan
           Invoke-WebRequest -Uri "https://download.anydesk.com/AnyDesk.exe" -OutFile "AnyDesk.exe"
-          .\AnyDesk.exe --install "C:\AnyDesk" --start-with-win --silent
+          Start-Process -FilePath ".\AnyDesk.exe" -ArgumentList "--install C:\AnyDesk --start-with-win --silent" -Wait
           Start-Sleep -Seconds 20
-          Write-Host "✅ AnyDesk instalado" -ForegroundColor Green
+          Write-Host "AnyDesk instalado" -ForegroundColor Green
 
       - name: Configure AnyDesk
         run: |
+          Write-Host "Configurando AnyDesk..." -ForegroundColor Cyan
           $anydeskPath = "C:\AnyDesk\AnyDesk.exe"
+          
           Start-Process -FilePath $anydeskPath
           Start-Sleep -Seconds 30
+          
           $anydeskId = $null
           for ($i = 1; $i -le 15; $i++) {
-            Write-Host "🔍 Tentativa $i/15 para obter ID AnyDesk..." -ForegroundColor Yellow
+            Write-Host "Tentativa $i de 15 para obter ID..." -ForegroundColor Yellow
             $output = & $anydeskPath --get-id 2>&1 | Out-String
             $output = $output.Trim()
             if ($output -match '^\d{9,10}$') {
               $anydeskId = $output
+              Write-Host "ID obtido: $anydeskId" -ForegroundColor Green
               break
             }
             Start-Sleep -Seconds 4
           }
+          
+          if ([string]::IsNullOrWhiteSpace($anydeskId)) {
+            $anydeskId = "ID_nao_disponivel"
+          }
+          
           $anydeskPassword = "Github2024"
-          $anydeskPassword | & $anydeskPath --set-password
+          echo $anydeskPassword | & $anydeskPath --set-password
+          
           echo "ANYDESK_ID=$anydeskId" >> $env:GITHUB_ENV
           echo "ANYDESK_PASS=$anydeskPassword" >> $env:GITHUB_ENV
-          Write-Host "✅ AnyDesk configurado - ID: $anydeskId" -ForegroundColor Green
+          
+          Write-Host "AnyDesk configurado" -ForegroundColor Green
 
-      - name: Install Essential Software
+      - name: Install Software
         run: |
-          Write-Host "📦 Instalando software essencial..." -ForegroundColor Cyan
+          Write-Host "Instalando software..." -ForegroundColor Cyan
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-          choco install googlechrome -y --ignore-checksums
-          choco install 7zip -y --ignore-checksums
-          choco install notepadplusplus -y --ignore-checksums
-          Write-Host "✅ Software instalado" -ForegroundColor Green
+          try {
+            iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+            choco install googlechrome -y --ignore-checksums --no-progress
+            choco install 7zip -y --ignore-checksums --no-progress
+            Write-Host "Software instalado" -ForegroundColor Green
+          } catch {
+            Write-Host "Erro ao instalar software adicional" -ForegroundColor Yellow
+          }
 
-      - name: Display Connection Info
+      - name: Display Credentials
         run: |
           Write-Host ""
-          Write-Host "════════════════════════════════════════════════════" -ForegroundColor Magenta
-          Write-Host "  WINDOWS CLOUD PC - AESTHETIC EDITION" -ForegroundColor Cyan
-          Write-Host "════════════════════════════════════════════════════" -ForegroundColor Magenta
+          Write-Host "========================================" -ForegroundColor Magenta
+          Write-Host " WINDOWS CLOUD PC - AESTHETIC EDITION" -ForegroundColor Cyan
+          Write-Host "========================================" -ForegroundColor Magenta
           Write-Host ""
-          Write-Host "🖥️  CONEXÃO RDP (Windows Remote Desktop)" -ForegroundColor Yellow
-          Write-Host "────────────────────────────────────────────────────" -ForegroundColor Magenta
+          Write-Host "RDP (Remote Desktop)" -ForegroundColor Yellow
+          Write-Host "----------------------------------------" -ForegroundColor Magenta
           Write-Host "Host: $env:RDP_URL" -ForegroundColor Green
-          Write-Host "Usuário: $env:RDP_USER" -ForegroundColor Green
+          Write-Host "Usuario: $env:RDP_USER" -ForegroundColor Green
           Write-Host "Senha: $env:RDP_PASS" -ForegroundColor Green
           Write-Host ""
-          Write-Host "📱 CONEXÃO ANYDESK" -ForegroundColor Yellow
-          Write-Host "────────────────────────────────────────────────────" -ForegroundColor Magenta
+          Write-Host "ANYDESK" -ForegroundColor Yellow
+          Write-Host "----------------------------------------" -ForegroundColor Magenta
           Write-Host "ID: $env:ANYDESK_ID" -ForegroundColor Green
           Write-Host "Senha: $env:ANYDESK_PASS" -ForegroundColor Green
           Write-Host ""
-          Write-Host "🎨 PERSONALIZAÇÃO" -ForegroundColor Yellow
-          Write-Host "────────────────────────────────────────────────────" -ForegroundColor Magenta
-          Write-Host "✅ Wallpaper Aesthetic Gradient" -ForegroundColor Green
-          Write-Host "✅ Tema Escuro Ativado" -ForegroundColor Green
-          Write-Host "✅ Cor de Destaque: Roxo" -ForegroundColor Green
+          Write-Host "PERSONALIZACAO" -ForegroundColor Yellow
+          Write-Host "----------------------------------------" -ForegroundColor Magenta
+          Write-Host "Wallpaper Aesthetic: OK" -ForegroundColor Green
+          Write-Host "Tema Escuro: OK" -ForegroundColor Green
+          Write-Host "Cor Roxa: OK" -ForegroundColor Green
           Write-Host ""
-          Write-Host "════════════════════════════════════════════════════" -ForegroundColor Magenta
+          Write-Host "========================================" -ForegroundColor Magenta
           Write-Host ""
 
       - name: Keep Session Active
         run: |
           $startTime = Get-Date
           $maxMinutes = 350
-          Write-Host "🟢 SESSÃO ATIVA - Conecte agora!" -ForegroundColor Green
+          
+          Write-Host "Sessao ativa - Conecte agora!" -ForegroundColor Green
           Write-Host ""
+          
           while ($true) {
             $elapsed = [math]::Floor(((Get-Date) - $startTime).TotalMinutes)
             $remaining = $maxMinutes - $elapsed
-            if ($remaining -le 0) { break }
+            
+            if ($remaining -le 0) { 
+              Write-Host "Tempo limite atingido" -ForegroundColor Red
+              break 
+            }
+            
             $anydeskRunning = Get-Process -Name "AnyDesk" -ErrorAction SilentlyContinue
             $ngrokRunning = Get-Process -Name "ngrok" -ErrorAction SilentlyContinue
+            
             if (-not $anydeskRunning) {
+              Write-Host "Reiniciando AnyDesk..." -ForegroundColor Yellow
               Start-Process "C:\AnyDesk\AnyDesk.exe"
             }
+            
             if (-not $ngrokRunning) {
+              Write-Host "Reiniciando ngrok..." -ForegroundColor Yellow
               Start-Process "C:\ngrok\ngrok.exe" -ArgumentList "tcp 3389 --region us" -WindowStyle Hidden
             }
+            
             if ($elapsed % 5 -eq 0) {
-              $status = if ($anydeskRunning -and $ngrokRunning) { "🟢 Online" } else { "🟡 Reiniciando" }
-              Write-Host "⏱️ [$elapsed/$maxMinutes min] $status | RDP: $env:RDP_URL | AnyDesk: $env:ANYDESK_ID" -ForegroundColor Cyan
+              $status = if ($anydeskRunning -and $ngrokRunning) { "Online" } else { "Reiniciando" }
+              Write-Host "[$elapsed/$maxMinutes min] Status: $status | RDP: $env:RDP_URL | AnyDesk: $env:ANYDESK_ID" -ForegroundColor Cyan
             }
+            
             Start-Sleep -Seconds 60
-          } 
+          }
