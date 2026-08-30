@@ -1,0 +1,350 @@
+      - name: Create Desktop Info Files
+        run: |
+          Write-Host "=== CRIANDO ARQUIVOS DE INFORMAÇÃO NA ÁREA DE TRABALHO ===" -ForegroundColor Cyan
+          
+          $desktopPath = [Environment]::GetFolderPath("Desktop")
+          
+          # Cria arquivo TXT com informações
+          $infoContent = @"
+╔═══════════════════════════════════════════════════════════╗
+║        WINDOWS CLOUD PC - INFORMAÇÕES DE CONEXÃO         ║
+╠═══════════════════════════════════════════════════════════╣
+
+🌐 ACESSO PELO NAVEGADOR (noVNC)
+────────────────────────────────────────────────────────────
+URL: $env:WEB_VNC_URL/vnc.html
+Senha VNC: Github2024
+
+🎯 ANYDESK
+────────────────────────────────────────────────────────────
+ID: $env:ANYDESK_ID
+Senha: $env:ANYDESK_PASS
+
+💻 RDP via NGROK
+────────────────────────────────────────────────────────────
+Host: $env:NGROK_RDP
+Usuário: $env:RDP_USER
+Senha: $env:RDP_PASS
+
+🖥️ VNC via NGROK
+────────────────────────────────────────────────────────────
+Host: $env:NGROK_VNC
+Senha: Github2024
+
+🎮 PLAYIT (se disponível)
+────────────────────────────────────────────────────────────
+Host: $env:PLAYIT_URL
+Usuário: $env:RDP_USER
+Senha: $env:RDP_PASS
+
+═══════════════════════════════════════════════════════════
+Sessão válida por 6 horas
+Gerado em: $(Get-Date -Format "dd/MM/yyyy HH:mm:ss")
+═══════════════════════════════════════════════════════════
+"@
+          
+          # Salva arquivo TXT
+          $infoContent | Out-File -FilePath "$desktopPath\INFORMACOES_DE_CONEXAO.txt" -Encoding UTF8
+          Write-Host "✅ Arquivo TXT criado: $desktopPath\INFORMACOES_DE_CONEXAO.txt" -ForegroundColor Green
+          
+          # Cria arquivo HTML mais bonito
+          $htmlContent = @"
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informações de Conexão - Cloud PC</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .card {
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #fff;
+        }
+        .card h2 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .info-row {
+            display: flex;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        .label {
+            font-weight: bold;
+            min-width: 120px;
+            color: #ffd700;
+        }
+        .value {
+            color: #fff;
+            word-break: break-all;
+            flex: 1;
+        }
+        .copy-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 0.9em;
+        }
+        .copy-btn:hover {
+            background: #45a049;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            font-size: 0.9em;
+        }
+        .highlight {
+            background: rgba(255,215,0,0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ Windows Cloud PC - Informações de Conexão</h1>
+        
+        <div class="card">
+            <h2>🌐 Acesso pelo Navegador (Mais Fácil!)</h2>
+            <div class="info-row">
+                <span class="label">URL Web:</span>
+                <span class="value">$env:WEB_VNC_URL/vnc.html</span>
+                <button class="copy-btn" onclick="copyText('$env:WEB_VNC_URL/vnc.html')">Copiar</button>
+            </div>
+            <div class="info-row">
+                <span class="label">Senha VNC:</span>
+                <span class="value highlight">Github2024</span>
+                <button class="copy-btn" onclick="copyText('Github2024')">Copiar</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🎯 AnyDesk (Recomendado)</h2>
+            <div class="info-row">
+                <span class="label">ID:</span>
+                <span class="value highlight">$env:ANYDESK_ID</span>
+                <button class="copy-btn" onclick="copyText('$env:ANYDESK_ID')">Copiar</button>
+            </div>
+            <div class="info-row">
+                <span class="label">Senha:</span>
+                <span class="value highlight">$env:ANYDESK_PASS</span>
+                <button class="copy-btn" onclick="copyText('$env:ANYDESK_PASS')">Copiar</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>💻 RDP via Ngrok</h2>
+            <div class="info-row">
+                <span class="label">Host:</span>
+                <span class="value">$env:NGROK_RDP</span>
+                <button class="copy-btn" onclick="copyText('$env:NGROK_RDP')">Copiar</button>
+            </div>
+            <div class="info-row">
+                <span class="label">Usuário:</span>
+                <span class="value highlight">$env:RDP_USER</span>
+                <button class="copy-btn" onclick="copyText('$env:RDP_USER')">Copiar</button>
+            </div>
+            <div class="info-row">
+                <span class="label">Senha:</span>
+                <span class="value highlight">$env:RDP_PASS</span>
+                <button class="copy-btn" onclick="copyText('$env:RDP_PASS')">Copiar</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🖥️ VNC via Ngrok</h2>
+            <div class="info-row">
+                <span class="label">Host:</span>
+                <span class="value">$env:NGROK_VNC</span>
+                <button class="copy-btn" onclick="copyText('$env:NGROK_VNC')">Copiar</button>
+            </div>
+            <div class="info-row">
+                <span class="label">Senha:</span>
+                <span class="value highlight">Github2024</span>
+                <button class="copy-btn" onclick="copyText('Github2024')">Copiar</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            ⏱️ Sessão válida por 6 horas<br>
+            📅 Gerado em: $(Get-Date -Format "dd/MM/yyyy HH:mm:ss")<br>
+            💎 Tema: Aesthetic Purple Edition
+        </div>
+    </div>
+    
+    <script>
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copiado: ' + text);
+            });
+        }
+    </script>
+</body>
+</html>
+"@
+          
+          # Salva arquivo HTML
+          $htmlContent | Out-File -FilePath "$desktopPath\CONEXOES.html" -Encoding UTF8
+          Write-Host "✅ Arquivo HTML criado: $desktopPath\CONEXOES.html" -ForegroundColor Green
+          
+          # Abre o arquivo HTML automaticamente no navegador
+          Start-Process "$desktopPath\CONEXOES.html"
+          
+          Write-Host "✅ Arquivo HTML aberto automaticamente!" -ForegroundColor Green
+
+      - name: Create Desktop Shortcut for Info
+        run: |
+          Write-Host "=== CRIANDO ATALHOS NA ÁREA DE TRABALHO ===" -ForegroundColor Cyan
+          
+          $desktopPath = [Environment]::GetFolderPath("Desktop")
+          
+          # Cria atalho para o arquivo de informações
+          $WshShell = New-Object -ComObject WScript.Shell
+          $Shortcut = $WshShell.CreateShortcut("$desktopPath\📋 Ver Informações de Conexão.lnk")
+          $Shortcut.TargetPath = "notepad.exe"
+          $Shortcut.Arguments = "$desktopPath\INFORMACOES_DE_CONEXAO.txt"
+          $Shortcut.IconLocation = "shell32.dll,165"
+          $Shortcut.Save()
+          
+          Write-Host "✅ Atalho criado na área de trabalho" -ForegroundColor Green
+
+      - name: Open Notepad with Info
+        run: |
+          Write-Host "=== ABRINDO NOTEPAD COM INFORMAÇÕES ===" -ForegroundColor Cyan
+          
+          $desktopPath = [Environment]::GetFolderPath("Desktop")
+          
+          # Abre o Notepad com as informações
+          Start-Process notepad.exe -ArgumentList "$desktopPath\INFORMACOES_DE_CONEXAO.txt"
+          
+          Write-Host "✅ Notepad aberto com informações de conexão!" -ForegroundColor Green
+
+      - name: Create Persistent Info Display
+        run: |
+          Write-Host "=== CRIANDO DISPLAY PERMANENTE ===" -ForegroundColor Cyan
+          
+          # Cria script PowerShell que mostra popup com informações
+          $popupScript = @"
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName System.Windows.Forms
+
+`$msgBoxInput = [System.Windows.MessageBox]::Show(@"
+═══════════════════════════════════════
+   INFORMAÇÕES DE CONEXÃO CLOUD PC
+═══════════════════════════════════════
+
+🎯 ANYDESK ID: $env:ANYDESK_ID
+🔑 ANYDESK Senha: $env:ANYDESK_PASS
+
+🌐 WEB: $env:WEB_VNC_URL/vnc.html
+🔑 VNC Senha: Github2024
+
+💻 RDP: $env:NGROK_RDP
+👤 User: $env:RDP_USER
+🔑 Pass: $env:RDP_PASS
+
+═══════════════════════════════════════
+Essas informações também estão em:
+📄 Desktop\INFORMACOES_DE_CONEXAO.txt
+🌐 Desktop\CONEXOES.html
+═══════════════════════════════════════
+"@, 'Cloud PC - Informações', 'OK', 'Information')
+"@
+          
+          # Salva script
+          $popupScript | Out-File -FilePath "C:\ShowInfo.ps1" -Encoding UTF8
+          
+          # Executa o popup
+          powershell.exe -ExecutionPolicy Bypass -File "C:\ShowInfo.ps1"
+          
+          Write-Host "✅ Popup com informações exibido!" -ForegroundColor Green
+
+      - name: Update Wallpaper with Info
+        run: |
+          Write-Host "=== CRIANDO WALLPAPER COM INFORMAÇÕES ===" -ForegroundColor Cyan
+          
+          # Cria imagem com informações usando PowerShell
+          Add-Type -AssemblyName System.Drawing
+          
+          $bitmap = New-Object System.Drawing.Bitmap(1920, 1080)
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          
+          # Fundo gradiente roxo
+          $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+              [System.Drawing.Point]::new(0, 0),
+              [System.Drawing.Point]::new(1920, 1080),
+              [System.Drawing.Color]::FromArgb(102, 126, 234),
+              [System.Drawing.Color]::FromArgb(118, 75, 162)
+          )
+          $graphics.FillRectangle($brush, 0, 0, 1920, 1080)
+          
+          # Adiciona texto
+          $font = New-Object System.Drawing.Font("Consolas", 16, [System.Drawing.FontStyle]::Bold)
+          $fontSmall = New-Object System.Drawing.Font("Consolas", 14)
+          $whiteBrush = [System.Drawing.Brushes]::White
+          $yellowBrush = [System.Drawing.Brushes]::Yellow
+          
+          $graphics.DrawString("CLOUD PC - INFORMAÇÕES DE CONEXÃO", $font, $yellowBrush, 550, 50)
+          
+          $y = 150
+          $graphics.DrawString("ANYDESK ID: $env:ANYDESK_ID", $fontSmall, $whiteBrush, 100, $y)
+          $y += 40
+          $graphics.DrawString("ANYDESK Senha: $env:ANYDESK_PASS", $fontSmall, $whiteBrush, 100, $y)
+          $y += 80
+          $graphics.DrawString("WEB VNC: $env:WEB_VNC_URL/vnc.html", $fontSmall, $whiteBrush, 100, $y)
+          $y += 40
+          $graphics.DrawString("VNC Senha: Github2024", $fontSmall, $whiteBrush, 100, $y)
+          $y += 80
+          $graphics.DrawString("Veja mais informações em:", $fontSmall, $yellowBrush, 100, $y)
+          $y += 40
+          $graphics.DrawString("Desktop\CONEXOES.html", $fontSmall, $whiteBrush, 100, $y)
+          
+          # Salva imagem
+          $bitmap.Save("C:\Wallpapers\info_wallpaper.png")
+          
+          # Define como wallpaper
+          Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name Wallpaper -Value "C:\Wallpapers\info_wallpaper.png"
+          rundll32.exe user32.dll, UpdatePerUserSystemParameters, 1, True
+          
+          $graphics.Dispose()
+          $bitmap.Dispose()
+          
+          Write-Host "✅ Wallpaper com informações criado!" -ForegroundColor Green
