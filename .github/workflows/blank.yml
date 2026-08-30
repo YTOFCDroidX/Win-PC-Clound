@@ -1,0 +1,69 @@
+name: Windows Cloud PC - AnyDesk
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Download and Install AnyDesk
+        shell: powershell
+        run: |
+          $installer = "$env:TEMP\AnyDesk.exe"
+          
+          # Download AnyDesk
+          Invoke-WebRequest `
+            -Uri "https://download.anydesk.com/AnyDesk.exe" `
+            -OutFile $installer
+          
+          Write-Host "✅ AnyDesk baixado com sucesso"
+          
+          # Install AnyDesk
+          Start-Process `
+            -FilePath $installer `
+            -ArgumentList "--install `"C:\AnyDesk`" --start-with-win --silent" `
+            -Wait
+          
+          Write-Host "✅ AnyDesk instalado"
+
+      - name: Configure and Start AnyDesk
+        shell: powershell
+        run: |
+          $anydeskPath = "C:\AnyDesk\AnyDesk.exe"
+          
+          # Set password
+          $password = "Github123"
+          & $anydeskPath --set-password $password
+          
+          Write-Host "✅ Senha configurada: $password"
+          
+          # Start AnyDesk
+          Start-Process -FilePath $anydeskPath
+          Start-Sleep -Seconds 10
+          
+          # Get AnyDesk ID
+          $id = & $anydeskPath --get-id
+          
+          Write-Host "=========================="
+          Write-Host "🖥️  INFORMAÇÕES DE ACESSO"
+          Write-Host "=========================="
+          Write-Host "ID AnyDesk: $id"
+          Write-Host "Senha: $password"
+          Write-Host "=========================="
+
+      - name: Keep Session Active
+        shell: powershell
+        run: |
+          Write-Host "⏳ Mantendo sessão ativa por 6 horas..."
+          Write-Host "Use as credenciais acima para conectar"
+          
+          # Loop para manter ativo
+          $endTime = (Get-Date).AddHours(6)
+          while ((Get-Date) -lt $endTime) {
+            $remaining = ($endTime - (Get-Date)).ToString("hh\:mm\:ss")
+            Write-Host "⏱️ Tempo restante: $remaining"
+            Start-Sleep -Seconds 300  # Atualiza a cada 5 minutos
+          }
