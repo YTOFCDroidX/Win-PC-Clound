@@ -1,3 +1,25 @@
+name: RDC New IP Text
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cloud-pc:
+    runs-on: windows-latest
+    env:
+      WEB_VNC_URL: ${{ secrets.WEB_VNC_URL }}
+      ANYDESK_ID: ${{ secrets.ANYDESK_ID }}
+      ANYDESK_PASS: ${{ secrets.ANYDESK_PASS }}
+      NGROK_RDP: ${{ secrets.NGROK_RDP }}
+      NGROK_VNC: ${{ secrets.NGROK_VNC }}
+      RDP_USER: ${{ secrets.RDP_USER }}
+      RDP_PASS: ${{ secrets.RDP_PASS }}
+      PLAYIT_URL: ${{ secrets.PLAYIT_URL }}
+    steps:
+      # ⚠️ Os steps que configuram AnyDesk, ngrok, RDP e definem essas
+      # variáveis de ambiente (env) devem vir ANTES destes. Não tenho
+      # esse conteúdo — cole-o aqui em cima se já existir no seu workflow.
+
       - name: Create Desktop Info Files
         run: |
           Write-Host "=== CRIANDO ARQUIVOS DE INFORMAÇÃO NA ÁREA DE TRABALHO ===" -ForegroundColor Cyan
