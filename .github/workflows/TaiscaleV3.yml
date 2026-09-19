@@ -1,4 +1,4 @@
-name: Windows RDP Gaming Setup
+name: Windows RDP Gaming V3 Setup
 
 on:
   workflow_dispatch:
@@ -14,260 +14,221 @@ jobs:
     
     steps:
       - name: Instalar Tailscale
+        shell: powershell
         run: |
-          Write-Host "📥 Baixando Tailscale..."
+          Write-Host "Baixando Tailscale..."
           Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi" -OutFile "$env:TEMP\tailscale.msi"
-          
-          Write-Host "⚙️ Instalando..."
+          Write-Host "Instalando..."
           Start-Process msiexec.exe -ArgumentList "/i $env:TEMP\tailscale.msi /quiet /norestart" -Wait -NoNewWindow
           Start-Sleep -Seconds 15
           
       - name: Conectar ao Tailscale
+        shell: powershell
         run: |
-          Write-Host "🔗 Conectando ao Tailscale..."
+          Write-Host "Conectando ao Tailscale..."
           & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=tskey-auth-kK7Wmdjzme11CNTRL-2tVaXw7poh9G2WzD6TH9i995bZkru8LTU --hostname=github-gaming-${{ github.run_number }} --accept-routes
           Start-Sleep -Seconds 10
           
-      - name: Configurar RDP e Usuário
+      - name: Configurar RDP e Usuario
+        shell: powershell
         run: |
-          Write-Host "👤 Criando usuário..."
-          
+          Write-Host "Criando usuario..."
           $Password = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 14 | ForEach-Object {[char]$_})
           $SecurePass = ConvertTo-SecureString $Password -AsPlainText -Force
-          
           try {
               New-LocalUser -Name "gamer" -Password $SecurePass -FullName "Gaming User" -Description "Gaming Setup" -ErrorAction Stop
               Add-LocalGroupMember -Group "Administrators" -Member "gamer" -ErrorAction Stop
               Add-LocalGroupMember -Group "Remote Desktop Users" -Member "gamer" -ErrorAction Stop
           } catch {
-              Write-Host "⚠️ Usuário pode já existir, resetando senha..."
+              Write-Host "Usuario ja existe, resetando senha..."
               Set-LocalUser -Name "gamer" -Password $SecurePass
           }
-          
-          Write-Host "🖥️ Habilitando RDP..."
+          Write-Host "Habilitando RDP..."
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
-          
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction SilentlyContinue
-          
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
-          
           $Password | Out-File -FilePath "$env:TEMP\rdp_password.txt" -Force
-          
-          Write-Host "✅ Usuário criado!"
+          Write-Host "Usuario criado com sucesso!"
 
       - name: Instalar Chocolatey
+        shell: powershell
         run: |
-          Write-Host "🍫 Instalando Chocolatey..."
+          Write-Host "Instalando Chocolatey..."
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           
       - name: Instalar Steam
+        shell: powershell
         run: |
-          Write-Host "🎮 Instalando Steam..."
+          Write-Host "Instalando Steam..."
           choco install steam -y --ignore-checksums
-          Write-Host "✅ Steam instalado!"
+          Write-Host "Steam instalado!"
           
-      - name: Baixar e Instalar LuaTools
+      - name: Baixar LuaTools
+        shell: powershell
         run: |
-          Write-Host "🔧 Baixando LuaTools v1.3.1..."
-          
+          Write-Host "Baixando LuaTools v1.3.1..."
           $LuaToolsUrl = "https://github.com/madoiscool/LuaTools/releases/download/v1.3.1/LuaTools-win-Setup.exe"
           $LuaToolsInstaller = "$env:TEMP\LuaTools-Setup.exe"
-          
           try {
               Invoke-WebRequest -Uri $LuaToolsUrl -OutFile $LuaToolsInstaller -UseBasicParsing
-              Write-Host "✅ LuaTools baixado!"
-              
-              Write-Host "⚙️ Instalando LuaTools..."
+              Write-Host "LuaTools baixado!"
+              Write-Host "Instalando LuaTools..."
               Start-Process -FilePath $LuaToolsInstaller -ArgumentList "/S" -Wait -NoNewWindow
-              
-              Write-Host "✅ LuaTools instalado!"
-              
+              Write-Host "LuaTools instalado!"
               $Desktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
               if (Test-Path "$env:LOCALAPPDATA\Programs\luatools\LuaTools.exe") {
                   $WshShell = New-Object -ComObject WScript.Shell
                   $Shortcut = $WshShell.CreateShortcut("$Desktop\LuaTools.lnk")
                   $Shortcut.TargetPath = "$env:LOCALAPPDATA\Programs\luatools\LuaTools.exe"
                   $Shortcut.Save()
-                  Write-Host "✅ Atalho criado na área de trabalho!"
+                  Write-Host "Atalho criado!"
               }
           } catch {
-              Write-Host "⚠️ Erro ao instalar LuaTools: $_"
-              Write-Host "📥 Instalador salvo em: $LuaToolsInstaller"
+              Write-Host "Erro ao instalar LuaTools"
           }
           
-      - name: Baixar e Instalar Roblox
+      - name: Baixar Roblox
+        shell: powershell
         run: |
-          Write-Host "🎮 Baixando Roblox Player..."
-          
+          Write-Host "Baixando Roblox Player..."
           $RobloxInstaller = "$env:TEMP\RobloxPlayerLauncher.exe"
-          
           try {
               Invoke-WebRequest -Uri "https://setup.rbxcdn.com/RobloxPlayerLauncher.exe" -OutFile $RobloxInstaller -UseBasicParsing
-              
-              Write-Host "⚙️ Instalando Roblox..."
+              Write-Host "Instalando Roblox..."
               Start-Process -FilePath $RobloxInstaller -Wait -NoNewWindow
-              
-              Write-Host "✅ Roblox instalado!"
+              Write-Host "Roblox instalado!"
           } catch {
-              Write-Host "⚠️ Erro ao baixar Roblox: $_"
+              Write-Host "Erro ao baixar Roblox"
           }
 
-      - name: Baixar Wallpapers Minecraft Lofi
+      - name: Baixar Wallpapers
+        shell: powershell
         run: |
-          Write-Host "🖼️ Baixando wallpapers Minecraft Lofi..."
-          
+          Write-Host "Baixando wallpapers Minecraft Lofi..."
           $WallpaperPath = "C:\Users\Public\Pictures\Wallpapers"
           New-Item -ItemType Directory -Path $WallpaperPath -Force | Out-Null
-          
-          Write-Host "📦 Instalando ImageMagick..."
-          choco install imagemagick -y
-          
-          Write-Host "📥 Baixando Minecraft Rainy House..."
+          Write-Host "Baixando Minecraft Rainy House..."
           try {
               Invoke-WebRequest -Uri "https://i.imgur.com/2xKzL8Y.jpg" -OutFile "$WallpaperPath\minecraft-rainy-house.jpg" -UseBasicParsing
-              Write-Host "✅ Wallpaper 1 baixado!"
+              Write-Host "Wallpaper 1 baixado!"
           } catch {
-              Write-Host "⚠️ Erro ao baixar wallpaper 1: $_"
+              Write-Host "Erro ao baixar wallpaper 1"
           }
-          
-          Write-Host "📥 Baixando Minecraft Lofi Fireplace..."
+          Write-Host "Baixando Minecraft Lofi Fireplace..."
           try {
               Invoke-WebRequest -Uri "https://i.imgur.com/9xQKV8N.jpg" -OutFile "$WallpaperPath\minecraft-lofi-fireplace.jpg" -UseBasicParsing
-              Write-Host "✅ Wallpaper 2 baixado!"
+              Write-Host "Wallpaper 2 baixado!"
           } catch {
-              Write-Host "⚠️ Erro ao baixar wallpaper 2: $_"
+              Write-Host "Erro ao baixar wallpaper 2"
           }
-          
-          Write-Host "📁 Wallpapers salvos em: $WallpaperPath"
+          Write-Host "Wallpapers salvos em: $WallpaperPath"
 
-      - name: Configurar Wallpaper Minecraft Lofi
+      - name: Configurar Wallpaper
+        shell: powershell
         run: |
-          Write-Host "🎨 Configurando wallpaper..."
-          
+          Write-Host "Configurando wallpaper..."
           $WallpaperPath = "C:\Users\Public\Pictures\Wallpapers\minecraft-rainy-house.jpg"
-          
           if (Test-Path $WallpaperPath) {
-              $code = @'
-              using System;
+              $setwallpapersrc = @"
               using System.Runtime.InteropServices;
-              public class Wallpaper {
-                  [DllImport("user32.dll", CharSet=CharSet.Auto)]
-                  public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+              public class wallpaper {
+                  public const int SetDesktopWallpaper = 20;
+                  public const int UpdateIniFile = 0x01;
+                  public const int SendWinIniChange = 0x02;
+                  [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+                  private static extern int SystemParametersInfo (int uAction, int uParam, string lpvParam, int fuWinIni);
+                  public static void SetWallpaper ( string path ) {
+                      SystemParametersInfo( SetDesktopWallpaper, 0, path, UpdateIniFile | SendWinIniChange );
+                  }
               }
-'@
-              Add-Type -TypeDefinition $code
-              
-              [Wallpaper]::SystemParametersInfo(20, 0, $WallpaperPath, 3)
-              
+"@
+              Add-Type -TypeDefinition $setwallpapersrc
+              [wallpaper]::SetWallpaper($WallpaperPath)
               Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name WallpaperStyle -Value 10
               Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name TileWallpaper -Value 0
-              
-              Write-Host "✅ Wallpaper Minecraft Lofi Rainy House configurado!"
+              Write-Host "Wallpaper Minecraft Lofi configurado!"
           } else {
-              Write-Host "⚠️ Wallpaper não encontrado em: $WallpaperPath"
+              Write-Host "Wallpaper nao encontrado"
           }
 
-      - name: Criar arquivo de informações
+      - name: Criar arquivo de info
+        shell: powershell
         run: |
           $Desktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
-          
-          $line1 = "═══════════════════════════════════════════════════════════"
-          $line2 = "        🎮 GAMING SETUP - WINDOWS RDP"
-          $line3 = "═══════════════════════════════════════════════════════════"
-          $line4 = ""
-          $line5 = "✅ APPS INSTALADOS:"
-          $line6 = ""
-          $line7 = "🎮 Steam - C:\Program Files (x86)\Steam\steam.exe"
-          $line8 = "🔧 LuaTools v1.3.1 - Atalho na área de trabalho"
-          $line9 = "🎮 Roblox Player"
-          $line10 = "🖼️ ImageMagick - Conversor de imagens"
-          $line11 = ""
-          $line12 = "═══════════════════════════════════════════════════════════"
-          $line13 = "🖼️ WALLPAPERS MINECRAFT LOFI:"
-          $line14 = "═══════════════════════════════════════════════════════════"
-          $line15 = ""
-          $line16 = "📁 Localização: C:\Users\Public\Pictures\Wallpapers\"
-          $line17 = ""
-          $line18 = "🎨 Wallpapers disponíveis:"
-          $line19 = "   • minecraft-rainy-house.jpg (APLICADO)"
-          $line20 = "   • minecraft-lofi-fireplace.jpg"
-          $line21 = ""
-          $line22 = "Para trocar: Botão direito → Personalizar → Plano de fundo"
-          $line23 = ""
-          $line24 = "═══════════════════════════════════════════════════════════"
-          $line25 = "🎵 WALLPAPERS ANIMADOS (OPCIONAL):"
-          $line26 = "═══════════════════════════════════════════════════════════"
-          $line27 = ""
-          $line28 = "1. Abra o Steam"
-          $line29 = "2. Compre Wallpaper Engine"
-          $line30 = "3. Procure Minecraft Lofi na Workshop"
-          $line31 = ""
-          $line32 = "Aproveite seu setup gaming!"
-          
-          $InfoContent = "$line1`n$line2`n$line3`n$line4`n$line5`n$line6`n$line7`n$line8`n$line9`n$line10`n$line11`n$line12`n$line13`n$line14`n$line15`n$line16`n$line17`n$line18`n$line19`n$line20`n$line21`n$line22`n$line23`n$line24`n$line25`n$line26`n$line27`n$line28`n$line29`n$line30`n$line31`n$line32"
-          
-          $InfoContent | Out-File -FilePath "$Desktop\GAMING_SETUP_INFO.txt" -Encoding UTF8
-          Write-Host "✅ Arquivo de informações criado!"
+          $InfoText = "GAMING SETUP - WINDOWS RDP`n`n"
+          $InfoText += "APPS INSTALADOS:`n"
+          $InfoText += "- Steam`n"
+          $InfoText += "- LuaTools v1.3.1`n"
+          $InfoText += "- Roblox Player`n`n"
+          $InfoText += "WALLPAPERS:`n"
+          $InfoText += "Localizacao: C:\Users\Public\Pictures\Wallpapers\`n"
+          $InfoText += "- minecraft-rainy-house.jpg (APLICADO)`n"
+          $InfoText += "- minecraft-lofi-fireplace.jpg`n`n"
+          $InfoText += "Para trocar: Botao direito -> Personalizar -> Plano de fundo`n`n"
+          $InfoText += "WALLPAPERS ANIMADOS (OPCIONAL):`n"
+          $InfoText += "1. Abra o Steam`n"
+          $InfoText += "2. Compre Wallpaper Engine`n"
+          $InfoText += "3. Procure Minecraft Lofi na Workshop`n`n"
+          $InfoText += "Aproveite seu setup gaming!`n"
+          $InfoText | Out-File -FilePath "$Desktop\GAMING_SETUP_INFO.txt" -Encoding UTF8
+          Write-Host "Arquivo de informacoes criado!"
 
-      - name: INFORMAÇÕES DE CONEXÃO
+      - name: Mostrar informacoes de conexao
+        shell: powershell
         run: |
           $IP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
           $Password = Get-Content "$env:TEMP\rdp_password.txt"
-          
           Write-Host ""
-          Write-Host "════════════════════════════════════════════════════════"
-          Write-Host "          🎮 GAMING SETUP - PRONTO!"
-          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host "========================================================"
+          Write-Host "          GAMING SETUP - PRONTO!"
+          Write-Host "========================================================"
           Write-Host ""
-          Write-Host "🔑 CREDENCIAIS RDP:"
+          Write-Host "CREDENCIAIS RDP:"
           Write-Host "   IP: $IP"
-          Write-Host "   Usuário: gamer"
+          Write-Host "   Usuario: gamer"
           Write-Host "   Senha: $Password"
           Write-Host ""
-          Write-Host "════════════════════════════════════════════════════════"
-          Write-Host "          ✅ INSTALADO:"
-          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host "========================================================"
+          Write-Host "          INSTALADO:"
+          Write-Host "========================================================"
           Write-Host ""
-          Write-Host "  🎮 Steam"
-          Write-Host "  🔧 LuaTools v1.3.1"
-          Write-Host "  🎮 Roblox Player"
-          Write-Host "  🖼️ Wallpaper Minecraft Lofi - APLICADO"
+          Write-Host "  Steam"
+          Write-Host "  LuaTools v1.3.1"
+          Write-Host "  Roblox Player"
+          Write-Host "  Wallpaper Minecraft Lofi - APLICADO"
           Write-Host ""
-          Write-Host "⏰ Sessão ativa por ${{ github.event.inputs.duration }} minutos"
+          Write-Host "Sessao ativa por ${{ github.event.inputs.duration }} minutos"
           Write-Host ""
           
       - name: Manter servidor ativo
+        shell: powershell
         run: |
           $Duration = [int]"${{ github.event.inputs.duration }}"
-          Write-Host "🟢 Servidor GAMING ativo!"
+          Write-Host "Servidor GAMING ativo!"
           Write-Host ""
-          
           for ($i = 1; $i -le $Duration; $i++) {
               $Remaining = $Duration - $i
               $Sessions = qwinsta 2>$null | Select-String "rdp" | Measure-Object
               $ActiveRDP = $Sessions.Count
-              
               if ($i % 1 -eq 0) {
                   $Timestamp = Get-Date -Format "HH:mm:ss"
-                  Write-Host "[$Timestamp] ⏰ $i/$Duration min | Restam $Remaining | 🎮 Conexões: $ActiveRDP"
+                  Write-Host "[$Timestamp] Tempo: $i/$Duration min | Restam $Remaining | Conexoes: $ActiveRDP"
               }
-              
               if ($i % 10 -eq 0) {
                   $CurrentIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
-                  Write-Host "📍 IP: $CurrentIP"
+                  Write-Host "IP: $CurrentIP"
               }
-              
               Start-Sleep -Seconds 60
           }
-          
-          Write-Host "⏱️ Tempo esgotado!"
+          Write-Host "Tempo esgotado!"
           
       - name: Limpeza
         if: always()
+        shell: powershell
         run: |
-          Write-Host "🔌 Desconectando..."
+          Write-Host "Desconectando..."
           & "C:\Program Files\Tailscale\tailscale.exe" down
           Remove-Item "$env:TEMP\rdp_password.txt" -ErrorAction SilentlyContinue
-          Write-Host "✅ Sessão encerrada!" 
+          Write-Host "Sessao encerrada!" 
