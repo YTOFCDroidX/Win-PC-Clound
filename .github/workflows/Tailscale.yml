@@ -1,0 +1,171 @@
+name: Windows RDP via Tailscale
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Tempo ativo (minutos)'
+        required: true
+        default: '360'
+
+jobs:
+  windows-rdp:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Instalar Tailscale
+        run: |
+          Write-Host "📥 Baixando Tailscale..."
+          Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi" -OutFile "$env:TEMP\tailscale.msi"
+          
+          Write-Host "⚙️ Instalando..."
+          Start-Process msiexec.exe -ArgumentList "/i $env:TEMP\tailscale.msi /quiet /norestart" -Wait -NoNewWindow
+          Start-Sleep -Seconds 15
+          
+      - name: Conectar ao Tailscale
+        run: |
+          Write-Host "🔗 Conectando ao Tailscale..."
+          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=tskey-auth-kK7Wmdjzme11CNTRL-2tVaXw7poh9G2WzD6TH9i995bZkru8LTU --hostname=github-runner-${{ github.run_number }} --accept-routes
+          Start-Sleep -Seconds 10
+          
+      - name: Configurar RDP e Usuário
+        run: |
+          Write-Host "👤 Criando usuário..."
+          
+          # Gerar senha aleatória
+          $Password = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 14 | ForEach-Object {[char]$_})
+          $SecurePass = ConvertTo-SecureString $Password -AsPlainText -Force
+          
+          # Criar usuário
+          try {
+              New-LocalUser -Name "rdpuser" -Password $SecurePass -FullName "RDP Mobile User" -Description "Acesso RDP" -ErrorAction Stop
+              Add-LocalGroupMember -Group "Administrators" -Member "rdpuser" -ErrorAction Stop
+              Add-LocalGroupMember -Group "Remote Desktop Users" -Member "rdpuser" -ErrorAction Stop
+          } catch {
+              Write-Host "⚠️ Usuário pode já existir, resetando senha..."
+              Set-LocalUser -Name "rdpuser" -Password $SecurePass
+          }
+          
+          # Habilitar RDP
+          Write-Host "🖥️ Habilitando RDP..."
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
+          
+          # Permitir no Firewall
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop" -ErrorAction SilentlyContinue
+          
+          # Desabilitar Network Level Authentication (facilita conexão)
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
+          
+          # Salvar senha em arquivo temporário
+          $Password | Out-File -FilePath "$env:TEMP\rdp_password.txt" -Force
+          
+          Write-Host "✅ Configuração concluída!"
+          
+      - name: 📱 INFORMAÇÕES DE CONEXÃO
+        run: |
+          # Obter IP do Tailscale
+          $IP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+          $Password = Get-Content "$env:TEMP\rdp_password.txt"
+          
+          Write-Host ""
+          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host "          📱 COMO CONECTAR DO CELULAR"
+          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host ""
+          Write-Host "🔑 CREDENCIAIS:"
+          Write-Host "   IP: $IP"
+          Write-Host "   Usuário: rdpuser"
+          Write-Host "   Senha: $Password"
+          Write-Host "   Porta: 3389"
+          Write-Host ""
+          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host "          📲 APPS PARA CONECTAR"
+          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host ""
+          Write-Host "ANDROID:"
+          Write-Host "  1. Microsoft Remote Desktop"
+          Write-Host "     https://play.google.com/store/apps/details?id=com.microsoft.rdc.androidx"
+          Write-Host ""
+          Write-Host "  2. Tailscale (obrigatório)"
+          Write-Host "     https://play.google.com/store/apps/details?id=com.tailscale.ipn"
+          Write-Host ""
+          Write-Host "iPHONE/iPad:"
+          Write-Host "  1. Microsoft Remote Desktop"
+          Write-Host "     https://apps.apple.com/app/microsoft-remote-desktop/id714464092"
+          Write-Host ""
+          Write-Host "  2. Tailscale (obrigatório)"
+          Write-Host "     https://apps.apple.com/app/tailscale/id1470499037"
+          Write-Host ""
+          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host "          🚀 PASSO A PASSO"
+          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host ""
+          Write-Host "1️⃣  Instale Tailscale no celular"
+          Write-Host "2️⃣  Faça login (mesma conta do https://login.tailscale.com)"
+          Write-Host "3️⃣  Instale Microsoft Remote Desktop"
+          Write-Host "4️⃣  Abra Remote Desktop → Toque no +"
+          Write-Host "5️⃣  Adicionar PC:"
+          Write-Host "     • PC name: $IP"
+          Write-Host "     • User account → Add User Account"
+          Write-Host "     • Username: rdpuser"
+          Write-Host "     • Password: $Password"
+          Write-Host "6️⃣  Salve e toque na conexão!"
+          Write-Host ""
+          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host "          💻 INFO DO SERVIDOR"
+          Write-Host "════════════════════════════════════════════════════════"
+          Write-Host ""
+          $OS = Get-CimInstance Win32_OperatingSystem
+          $CPU = Get-CimInstance Win32_Processor
+          $RAM = [math]::Round($OS.TotalVisibleMemorySize/1MB, 2)
+          
+          Write-Host "  OS: $($OS.Caption)"
+          Write-Host "  CPU: $($CPU.Name)"
+          Write-Host "  RAM: $RAM GB"
+          Write-Host "  Cores: $($CPU.NumberOfCores)"
+          Write-Host ""
+          Write-Host "⏰ Servidor ativo por ${{ github.event.inputs.duration }} minutos"
+          Write-Host "💡 Cancele o workflow quando terminar de usar"
+          Write-Host ""
+          
+      - name: ⏳ Manter servidor ativo
+        run: |
+          $Duration = [int]"${{ github.event.inputs.duration }}"
+          Write-Host "🟢 Servidor RDP ATIVO e aguardando conexão..."
+          Write-Host ""
+          
+          for ($i = 1; $i -le $Duration; $i++) {
+              $Remaining = $Duration - $i
+              
+              # Contar sessões RDP ativas
+              $Sessions = qwinsta 2>$null | Select-String "rdp" | Measure-Object
+              $ActiveRDP = $Sessions.Count
+              
+              # Mostrar status
+              if ($i % 1 -eq 0) {
+                  $Timestamp = Get-Date -Format "HH:mm:ss"
+                  Write-Host "[$Timestamp] ⏰ Minuto $i/$Duration | Restam $Remaining min | 🖥️ Conexões RDP: $ActiveRDP"
+              }
+              
+              # Mostrar IP a cada 10 minutos
+              if ($i % 10 -eq 0) {
+                  $CurrentIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+                  Write-Host "📍 IP Tailscale continua: $CurrentIP"
+              }
+              
+              Start-Sleep -Seconds 60
+          }
+          
+          Write-Host ""
+          Write-Host "⏱️ Tempo esgotado! Encerrando..."
+          
+      - name: 🧹 Limpeza
+        if: always()
+        run: |
+          Write-Host "🔌 Desconectando Tailscale..."
+          & "C:\Program Files\Tailscale\tailscale.exe" down
+          
+          Write-Host "🗑️ Removendo arquivos temporários..."
+          Remove-Item "$env:TEMP\rdp_password.txt" -ErrorAction SilentlyContinue
+          
+          Write-Host "✅ Sessão encerrada com sucesso!" 
