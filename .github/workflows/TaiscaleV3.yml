@@ -62,13 +62,13 @@ jobs:
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
           Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           
-      - name: 🎮 Instalar Steam
+      - name: Instalar Steam
         run: |
           Write-Host "🎮 Instalando Steam..."
           choco install steam -y --ignore-checksums
           Write-Host "✅ Steam instalado!"
           
-      - name: 🔧 Baixar e Instalar LuaTools
+      - name: Baixar e Instalar LuaTools
         run: |
           Write-Host "🔧 Baixando LuaTools v1.3.1..."
           
@@ -97,7 +97,7 @@ jobs:
               Write-Host "📥 Instalador salvo em: $LuaToolsInstaller"
           }
           
-      - name: 🎮 Baixar e Instalar Roblox
+      - name: Baixar e Instalar Roblox
         run: |
           Write-Host "🎮 Baixando Roblox Player..."
           
@@ -114,7 +114,7 @@ jobs:
               Write-Host "⚠️ Erro ao baixar Roblox: $_"
           }
 
-      - name: 🖼️ Baixar Wallpapers Minecraft Lofi
+      - name: Baixar Wallpapers Minecraft Lofi
         run: |
           Write-Host "🖼️ Baixando wallpapers Minecraft Lofi..."
           
@@ -126,34 +126,10 @@ jobs:
           
           Write-Host "📥 Baixando Minecraft Rainy House..."
           try {
-              Invoke-WebRequest -Uri "https://media.wallpaperengine.space/posters/v1/minecraft-rainy-wooden-house.webp" -OutFile "$WallpaperPath\minecraft-rainy-house.webp" -UseBasicParsing
-              
-              Start-Sleep -Seconds 5
-              
-              $MagickPaths = @(
-                  "C:\Program Files\ImageMagick-*\magick.exe",
-                  "C:\ProgramData\chocolatey\lib\imagemagick\tools\magick.exe"
-              )
-              
-              $MagickExe = $null
-              foreach ($path in $MagickPaths) {
-                  $found = Get-Item $path -ErrorAction SilentlyContinue | Select-Object -First 1
-                  if ($found) {
-                      $MagickExe = $found.FullName
-                      break
-                  }
-              }
-              
-              if ($MagickExe) {
-                  Write-Host "🔄 Convertendo webp para jpg..."
-                  & $MagickExe "$WallpaperPath\minecraft-rainy-house.webp" "$WallpaperPath\minecraft-rainy-house.jpg"
-                  Write-Host "✅ Wallpaper 1 convertido!"
-              } else {
-                  Write-Host "⚠️ ImageMagick não encontrado, baixando JPG alternativo..."
-                  Invoke-WebRequest -Uri "https://i.imgur.com/2xKzL8Y.jpg" -OutFile "$WallpaperPath\minecraft-rainy-house.jpg" -UseBasicParsing
-              }
+              Invoke-WebRequest -Uri "https://i.imgur.com/2xKzL8Y.jpg" -OutFile "$WallpaperPath\minecraft-rainy-house.jpg" -UseBasicParsing
+              Write-Host "✅ Wallpaper 1 baixado!"
           } catch {
-              Write-Host "⚠️ Erro ao processar wallpaper 1: $_"
+              Write-Host "⚠️ Erro ao baixar wallpaper 1: $_"
           }
           
           Write-Host "📥 Baixando Minecraft Lofi Fireplace..."
@@ -166,7 +142,7 @@ jobs:
           
           Write-Host "📁 Wallpapers salvos em: $WallpaperPath"
 
-      - name: 🎨 Configurar Wallpaper Minecraft Lofi
+      - name: Configurar Wallpaper Minecraft Lofi
         run: |
           Write-Host "🎨 Configurando wallpaper..."
           
@@ -193,55 +169,49 @@ jobs:
               Write-Host "⚠️ Wallpaper não encontrado em: $WallpaperPath"
           }
 
-      - name: 📝 Criar arquivo de informações
+      - name: Criar arquivo de informações
         run: |
           $Desktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
           
-          $InfoContent = @"
-═══════════════════════════════════════════════════════════
-        🎮 GAMING SETUP - WINDOWS RDP
-═══════════════════════════════════════════════════════════
-
-✅ APPS INSTALADOS:
-
-🎮 Steam - C:\Program Files (x86)\Steam\steam.exe
-🔧 LuaTools v1.3.1 - Atalho na área de trabalho
-🎮 Roblox Player - %LOCALAPPDATA%\Roblox\
-🖼️ ImageMagick - Conversor de imagens
-
-═══════════════════════════════════════════════════════════
-🖼️ WALLPAPERS MINECRAFT LOFI:
-═══════════════════════════════════════════════════════════
-
-📁 Localização: C:\Users\Public\Pictures\Wallpapers\
-
-🎨 Wallpapers disponíveis:
-   • minecraft-rainy-house.jpg (APLICADO ✅)
-   • minecraft-lofi-fireplace.jpg
-
-Para trocar: Botão direito → Personalizar → Plano de fundo
-
-═══════════════════════════════════════════════════════════
-🎵 WALLPAPERS ANIMADOS (OPCIONAL):
-═══════════════════════════════════════════════════════════
-
-1. Abra o Steam
-2. Compre "Wallpaper Engine" (~R$ 18)
-3. Procure "Minecraft Lofi" na Workshop
-
-Links:
-• https://www.wallpaperengine.space/wallpaper/minecraft-lofi-fireplace
-• https://www.wallpaperengine.space/wallpaper/minecraft-rainy-wooden-house
-
-═══════════════════════════════════════════════════════════
-
-Aproveite seu setup gaming! 🎮🔥
-"@
+          $line1 = "═══════════════════════════════════════════════════════════"
+          $line2 = "        🎮 GAMING SETUP - WINDOWS RDP"
+          $line3 = "═══════════════════════════════════════════════════════════"
+          $line4 = ""
+          $line5 = "✅ APPS INSTALADOS:"
+          $line6 = ""
+          $line7 = "🎮 Steam - C:\Program Files (x86)\Steam\steam.exe"
+          $line8 = "🔧 LuaTools v1.3.1 - Atalho na área de trabalho"
+          $line9 = "🎮 Roblox Player"
+          $line10 = "🖼️ ImageMagick - Conversor de imagens"
+          $line11 = ""
+          $line12 = "═══════════════════════════════════════════════════════════"
+          $line13 = "🖼️ WALLPAPERS MINECRAFT LOFI:"
+          $line14 = "═══════════════════════════════════════════════════════════"
+          $line15 = ""
+          $line16 = "📁 Localização: C:\Users\Public\Pictures\Wallpapers\"
+          $line17 = ""
+          $line18 = "🎨 Wallpapers disponíveis:"
+          $line19 = "   • minecraft-rainy-house.jpg (APLICADO)"
+          $line20 = "   • minecraft-lofi-fireplace.jpg"
+          $line21 = ""
+          $line22 = "Para trocar: Botão direito → Personalizar → Plano de fundo"
+          $line23 = ""
+          $line24 = "═══════════════════════════════════════════════════════════"
+          $line25 = "🎵 WALLPAPERS ANIMADOS (OPCIONAL):"
+          $line26 = "═══════════════════════════════════════════════════════════"
+          $line27 = ""
+          $line28 = "1. Abra o Steam"
+          $line29 = "2. Compre Wallpaper Engine"
+          $line30 = "3. Procure Minecraft Lofi na Workshop"
+          $line31 = ""
+          $line32 = "Aproveite seu setup gaming!"
+          
+          $InfoContent = "$line1`n$line2`n$line3`n$line4`n$line5`n$line6`n$line7`n$line8`n$line9`n$line10`n$line11`n$line12`n$line13`n$line14`n$line15`n$line16`n$line17`n$line18`n$line19`n$line20`n$line21`n$line22`n$line23`n$line24`n$line25`n$line26`n$line27`n$line28`n$line29`n$line30`n$line31`n$line32"
           
           $InfoContent | Out-File -FilePath "$Desktop\GAMING_SETUP_INFO.txt" -Encoding UTF8
           Write-Host "✅ Arquivo de informações criado!"
 
-      - name: 📱 INFORMAÇÕES DE CONEXÃO
+      - name: INFORMAÇÕES DE CONEXÃO
         run: |
           $IP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
           $Password = Get-Content "$env:TEMP\rdp_password.txt"
@@ -257,18 +227,18 @@ Aproveite seu setup gaming! 🎮🔥
           Write-Host "   Senha: $Password"
           Write-Host ""
           Write-Host "════════════════════════════════════════════════════════"
-          Write-Host "          ✅ INSTALADO E CONFIGURADO:"
+          Write-Host "          ✅ INSTALADO:"
           Write-Host "════════════════════════════════════════════════════════"
           Write-Host ""
-          Write-Host "  🎮 Steam - Pronto para baixar jogos"
-          Write-Host "  🔧 LuaTools v1.3.1 - Atalho na área de trabalho"
-          Write-Host "  🎮 Roblox Player - Instalado"
-          Write-Host "  🖼️ Wallpaper Minecraft Lofi - APLICADO!"
+          Write-Host "  🎮 Steam"
+          Write-Host "  🔧 LuaTools v1.3.1"
+          Write-Host "  🎮 Roblox Player"
+          Write-Host "  🖼️ Wallpaper Minecraft Lofi - APLICADO"
           Write-Host ""
           Write-Host "⏰ Sessão ativa por ${{ github.event.inputs.duration }} minutos"
           Write-Host ""
           
-      - name: ⏳ Manter servidor ativo
+      - name: Manter servidor ativo
         run: |
           $Duration = [int]"${{ github.event.inputs.duration }}"
           Write-Host "🟢 Servidor GAMING ativo!"
@@ -294,10 +264,10 @@ Aproveite seu setup gaming! 🎮🔥
           
           Write-Host "⏱️ Tempo esgotado!"
           
-      - name: 🧹 Limpeza
+      - name: Limpeza
         if: always()
         run: |
           Write-Host "🔌 Desconectando..."
           & "C:\Program Files\Tailscale\tailscale.exe" down
           Remove-Item "$env:TEMP\rdp_password.txt" -ErrorAction SilentlyContinue
-          Write-Host "✅ Sessão encerrada!"
+          Write-Host "✅ Sessão encerrada!" 
